@@ -1,16 +1,15 @@
 #include "queue.h"
 #include "tile_game.h"
+#include <stdlib.h>
 
 void enqueue(struct queue *q, struct game_state state) 
 {
-    size_t state_compress = (size_t) serialize(state);
-    insert_at_tail(&(q->data), state_compress);
+    insert_at_tail(&(q->data), (size_t) serialize(state));
 }
 
 struct game_state dequeue(struct queue *q) 
 {
-    size_t state_compressed = remove_from_head(&(q->data));
-    return deserialize(state_compressed);
+    return deserialize(remove_from_head(&(q->data)));
 }
 
 int number_of_moves(struct game_state start)
@@ -24,24 +23,28 @@ int number_of_moves(struct game_state start)
     };
 
     //visited list
-    
+    size_t visited_size = 2048;
+    size_t visited_count = 0;
+    size_t* visited = malloc(sizeof(size_t) * visited_size);
     // initialize
     struct queue game_queue = {0};
     game_queue.data.head = NULL;
     
     // enqueue starting node
     enqueue(&game_queue, start);
+    visited[visited_count++] = serialize(start);
     struct game_state node;
     while (game_queue.data.head != NULL)
     {
         // game state we're looking at
         node = dequeue(&game_queue);
         //test, avoid time out
-        // if (iteration > 120000)
-        // {
-        //     free_list(game_queue.data);
-        //     return -1;
-        // }
+        if (node.num_steps > 100)
+        {
+            free_list(game_queue.data);
+            free(visited);
+            return -1;
+        }
         // check if this is final state, if match, return num_step
         int match_count = 0;
         for (int i = 0; i < 4; i++)
@@ -60,42 +63,121 @@ int number_of_moves(struct game_state start)
         {
             //printf("matched, %d\n", node.num_steps);
             free_list(game_queue.data);
-            
+            free(visited);
             return (int) node.num_steps;
         }
 
         // enqueue neighbour
         // enqueue move up
-        struct game_state next_up = node;
+        
         if (node.empty_row != 3)
         {
+            struct game_state next_up = node;
+            char seen = 0;
             move_up(&next_up);
-            enqueue(&game_queue, next_up);
+            size_t next_up_code = serialize(next_up);
+            for (size_t i = 0; i < visited_count; i++)
+            {
+                if (next_up_code == visited[i])
+                {
+                    seen = 1;
+                    break;
+                }
+            }
+            if (!seen)
+            {
+                visited[visited_count++] = next_up_code;
+                enqueue(&game_queue, next_up);
+                if (visited_count == visited_size)
+                {
+                    visited_size *= 2;
+                    visited = realloc(visited, visited_size * sizeof(size_t));
+                }
+            }
         }
-        // move down
-        struct game_state next_down = node;
+
         if (node.empty_row != 0)
         {
+            struct game_state next_down = node;
+            char seen = 0;
             move_down(&next_down);
-            enqueue(&game_queue, next_down);
+            size_t next_down_code = serialize(next_down);
+            for (size_t i = 0; i < visited_count; i++)
+            {
+                if (next_down_code == visited[i])
+                {
+                    seen = 1;
+                    break;
+                }
+            }
+            if (!seen)
+            {
+                visited[visited_count++] = next_down_code;
+                enqueue(&game_queue, next_down);
+                if (visited_count == visited_size)
+                {
+                    visited_size *= 2;
+                    visited = realloc(visited, visited_size * sizeof(size_t));
+                }
+            }
         }
-        // move left
-        struct game_state next_left = node;
+
         if (node.empty_col != 3)
         {
+            struct game_state next_left = node;
+            char seen = 0;
             move_left(&next_left);
-            enqueue(&game_queue, next_left);
+            size_t next_left_code = serialize(next_left);
+            for (size_t i = 0; i < visited_count; i++)
+            {
+                if (next_left_code == visited[i])
+                {
+                    seen = 1;
+                    break;
+                }
+            }
+            if (!seen)
+            {
+                visited[visited_count++] = next_left_code;
+                enqueue(&game_queue, next_left);
+                if (visited_count == visited_size)
+                {
+                    visited_size *= 2;
+                    visited = realloc(visited, visited_size * sizeof(size_t));
+                }
+            }
         }
-        // move right
-        struct game_state next_right = node;
+
         if (node.empty_col != 0)
         {
+            struct game_state next_right = node;
+            char seen = 0;
             move_right(&next_right);
-            enqueue(&game_queue, next_right);
+            size_t next_right_code = serialize(next_right);
+            for (size_t i = 0; i < visited_count; i++)
+            {
+                if (next_right_code == visited[i])
+                {
+                    seen = 1;
+                    break;
+                }
+            }
+            if (!seen)
+            {
+                visited[visited_count++] = next_right_code;
+                enqueue(&game_queue, next_right);
+                if (visited_count == visited_size)
+                {
+                    visited_size *= 2;
+                    visited = realloc(visited, visited_size * sizeof(size_t));
+                }
+            }
         }
 
     }
-
+    //printf("cannot solve");
+    free_list(game_queue.data);
+    free(visited);
     return -1;
 
 }
