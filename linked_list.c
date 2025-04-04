@@ -15,10 +15,10 @@ void insert_at_head(struct linked_list *list, size_t value) {}
 void insert_at_tail(struct linked_list *list, size_t value) 
 {
   //no list
-  if (list == NULL)
-  {
-    return;
-  }
+  // if (list == NULL)
+  // {
+  //   return;
+  // }
   // when there is no head, add it to be head
   if (list->head == NULL)
   {
@@ -55,14 +55,12 @@ size_t remove_from_tail(struct linked_list *list) { return 0; }
 void free_list(struct linked_list list) 
 {
   struct list_node* head = list.head;
-  struct list_node* second = head->next;
-  while (second != NULL)
+  while (head != NULL)
   {
-    free(head);
-    head = second;
-    second = head->next;
+    struct list_node* tmp_node = head;
+    head = head->next;
+    free(tmp_node);
   }
-  free(head);
 }
 
 // Utility function to help you debugging, do not modify

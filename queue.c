@@ -3,9 +3,8 @@
 
 void enqueue(struct queue *q, struct game_state state) 
 {
-    struct linked_list data = q->data;
     size_t state_compress = (size_t) serialize(state);
-    insert_at_tail(&data, state_compress);
+    insert_at_tail(&(q->data), state_compress);
 }
 
 struct game_state dequeue(struct queue *q) 
@@ -24,6 +23,8 @@ int number_of_moves(struct game_state start)
         {13, 14, 15, 0}
     };
 
+    //visited list
+    
     // initialize
     struct queue game_queue = {0};
     game_queue.data.head = NULL;
@@ -35,52 +36,62 @@ int number_of_moves(struct game_state start)
     {
         // game state we're looking at
         node = dequeue(&game_queue);
-
+        //test, avoid time out
+        // if (iteration > 120000)
+        // {
+        //     free_list(game_queue.data);
+        //     return -1;
+        // }
         // check if this is final state, if match, return num_step
         int match_count = 0;
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 4; j++)
             {
+                //printf("game state value: %d; check value: %d\n", node.tiles[i][j], check[i][j]);
                 if (node.tiles[i][j] == check[i][j])
                 {
                     match_count++;
                 }
             }
         }
+        // printf("\n");
         if (match_count == 16 && check[node.empty_row][node.empty_col] == 0)
         {
-            return node.num_steps;
+            //printf("matched, %d\n", node.num_steps);
+            free_list(game_queue.data);
+            
+            return (int) node.num_steps;
         }
 
         // enqueue neighbour
         // enqueue move up
+        struct game_state next_up = node;
         if (node.empty_row != 3)
         {
-            move_up(&node);
-            enqueue(&game_queue, node);
-            move_down(&node);
+            move_up(&next_up);
+            enqueue(&game_queue, next_up);
         }
         // move down
+        struct game_state next_down = node;
         if (node.empty_row != 0)
         {
-            move_down(&node);
-            enqueue(&game_queue, node);
-            move_up(&node);
+            move_down(&next_down);
+            enqueue(&game_queue, next_down);
         }
         // move left
+        struct game_state next_left = node;
         if (node.empty_col != 3)
         {
-            move_left(&node);
-            enqueue(&game_queue, node);
-            move_right(&node);
+            move_left(&next_left);
+            enqueue(&game_queue, next_left);
         }
         // move right
+        struct game_state next_right = node;
         if (node.empty_col != 0)
         {
-            move_right(&node);
-            enqueue(&game_queue, node);
-            move_left(&node);
+            move_right(&next_right);
+            enqueue(&game_queue, next_right);
         }
 
     }
